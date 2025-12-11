@@ -7,26 +7,32 @@
   <link rel="icon" href="restaurant.png">
   <style>
     @font-face {
-font-family: 'Huninn';
-src: url('jf-openhuninn-2.1.ttf') format('truetype');
-}
-    h1 {
-    font-size: 36px;
-    margin-bottom: 20px;
+      font-family: 'Huninn';
+      src: url('jf-openhuninn-2.1.ttf') format('truetype');
     }
+
     body {
-       font-family: 'jf-openhuninn';
+      margin: 0;
+      background: #f5f5f5;
+      font-family: 'Huninn', sans-serif;
+    }
+
+    /* 新增 Page Container 讓 h1 可以在上方 */
+    .page-container {
       display: flex;
-      text-align: center;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
-      background: #f5f5f5;
-      font-family: sans-serif;
+      text-align: center;
     }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+
     #wheel-container {
-      font-family: 'jf-openhuninn';
       position: relative;
       width: 25vw;
       height: 25vw;
@@ -34,8 +40,8 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       justify-content: center;
       align-items: center;
     }
+
     #wheel {
-      font-family: 'jf-openhuninn';
       width: 100%;
       height: 100%;
       border-radius: 50%;
@@ -44,6 +50,7 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       transform-origin: 50% 50%;
       display: block;
     }
+
     #spin-btn {
       position: absolute;
       top: 50%;
@@ -62,6 +69,7 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       user-select: none;
       z-index: 5;
     }
+
     #pointer {
       position: absolute;
       bottom: -20px;
@@ -75,6 +83,7 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       pointer-events: none;
       z-index: 10;
     }
+
     #result-box {
       position: fixed;
       top: 50%;
@@ -88,6 +97,7 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       display: none;
       z-index: 999;
     }
+
     #result-box button {
       margin: 10px;
       padding: 8px 12px;
@@ -95,19 +105,24 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       border-radius: 6px;
       cursor: pointer;
     }
+
     .ok-btn { background: #5cb85c; color: white; }
     .retry-btn { background: #d9534f; color: white; }
-    /* 確保畫布在放大/縮小時保持清晰（可選） */
+
     canvas { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <h1>吃什麼好呢?</h1>
-  <div id="wheel-container">
-    <div id="pointer"></div>
-    <!-- canvas 實際像素大小設定為 800 以確保放大時仍然清晰 -->
-    <canvas id="wheel" width="800" height="800"></canvas>
-    <div id="spin-btn">開始</div>
+
+  <!-- ⭐ 外層容器，讓 h1 在轉盤上方置中 -->
+  <div class="page-container">
+    <h1>吃什麼好呢?</h1>
+
+    <div id="wheel-container">
+      <div id="pointer"></div>
+      <canvas id="wheel" width="800" height="800"></canvas>
+      <div id="spin-btn">開始</div>
+    </div>
   </div>
 
   <div id="result-box">
@@ -127,17 +142,15 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
     const retryBtn = document.getElementById("retryBtn");
 
     let startAngle = 0;
-    let currentRotation = 0; // 讓每次旋轉都比上次大，強制順時針
-    let spinning = false; // 防止重複點擊
+    let currentRotation = 0;
+    let spinning = false;
 
     function drawWheel() {
-      // 以畫布實際像素大小為基準
       const centerX = wheel.width / 2;
       const centerY = wheel.height / 2;
       const radius = Math.min(centerX, centerY) - 10;
       const arc = (2 * Math.PI) / foods.length;
 
-      // 柔和馬卡龍色（較深一點）
       const pastelColors = ["#ffb3c6", "#ffd59e", "#fff7a3", "#b8e8d1", "#bcdcff", "#c9b5ff", "#ffb8e1", "#f7c7aa"];
 
       ctx.clearRect(0, 0, wheel.width, wheel.height);
@@ -151,51 +164,46 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
         ctx.closePath();
         ctx.fill();
 
-        // 文字
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(angle + arc / 2);
         ctx.textAlign = "center";
         ctx.fillStyle = "#000";
-        ctx.font = `bold ${wheel.width / 16}px sans-serif`;
-        // 在半徑附近畫文字（相對於圓心）
-        ctx.fillText(foods[i], (wheel.width / 2) * 0.7, 5);
+
+        ctx.font = `bold ${wheel.width / 16}px Huninn`;
+
+        ctx.fillText(foods[i], radius * 0.7, 5);
         ctx.restore();
       }
     }
 
-    // 初次繪製
     drawWheel();
 
-    // 綁定按鈕
     spinBtn.addEventListener('click', spinWheel);
     retryBtn.addEventListener('click', spinWheel);
-    okBtn.addEventListener('click', closeBox);
+    okBtn.addEventListener('click', () => resultBox.style.display = "none");
 
     function spinWheel() {
-      if (spinning) return; // 如果正在轉就忽略多餘點擊
+      if (spinning) return;
       spinning = true;
       resultBox.style.display = "none";
 
-      // 保證每次都是順時針（增加角度），且避免落在兩區塊交界
       let extraSpin;
       const arcDeg = 360 / foods.length;
       let boundary = null;
       do {
         extraSpin = 360 * 5 + Math.random() * 360;
-        // 預測最終角度（以度為單位）
         const predicted = (currentRotation + extraSpin) % 360;
-        const pointerDeg = 90; // 指針在畫面下方
+        const pointerDeg = 90;
         const corrected = (predicted + pointerDeg) % 360;
         boundary = corrected % arcDeg;
-      } while (boundary < 2 || boundary > arcDeg - 2); // 距離邊界 <2° 就重抽
+      } while (boundary < 2 || boundary > arcDeg - 2);
 
       currentRotation += extraSpin;
       wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-      // 在動畫結束後顯示結果（稍微多於 transition 時間以保險）
       setTimeout(() => {
-        const finalAngle = (currentRotation % 360);
+        const finalAngle = currentRotation % 360;
         const arc = 360 / foods.length;
         const correctedAngle = (360 - finalAngle + 90) % 360;
         const index = Math.floor(correctedAngle / arc);
@@ -207,17 +215,7 @@ src: url('jf-openhuninn-2.1.ttf') format('truetype');
       }, 4200);
     }
 
-    function closeBox() {
-      resultBox.style.display = "none";
-    }
-
-    // 在視窗縮放時重新調整 canvas 尺寸並重畫（確保同心）
-    window.addEventListener('resize', () => {
-      // 讓 canvas 的 CSS 尺寸保持 100%（已設定），但實際像素大小保持 800x800，
-      // 若要讓像素大小跟隨視窗改變可以在這裡同步更新 wheel.width/height
-      drawWheel();
-    });
+    window.addEventListener('resize', drawWheel);
   </script>
 </body>
 </html>
-
