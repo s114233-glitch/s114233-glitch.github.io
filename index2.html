@@ -1,146 +1,221 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>吃什麼好呢？轉盤</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>晚餐轉盤</title>
+  <link rel="icon" href="restaurant.png">
+  <style>
+    @font-face {
+      font-family: 'Huninn';
+      src: url('jf-openhuninn-2.1.ttf') format('truetype');
+    }
 
-    <style>
-        @font-face {
-            font-family: 'Huninn';
-            src: url('./jf-openhuninn-2.1.ttf') format('truetype');
-        }
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      font-family: 'Huninn', sans-serif;
+    }
 
-        body {
-            margin: 0;
-            background: #fdf7ff;
-            font-family: 'Huninn', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    /* 新增 Page Container 讓 h1 可以在上方 */
+    .page-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
 
-        h1 {
-            font-family: 'Huninn';
-            margin-top: 10px;  /* 🔼 調整後：更往上靠 */
-            margin-bottom: 10px; /* 與轉盤保持一點距離 */
-            font-size: 42px;
-            color: #333;
-        }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
 
-        #wheel {
-            margin-top: 5px;
-        }
+    #wheel-container {
+      position: relative;
+      width: 25vw;
+      height: 25vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-        button {
-            margin-top: 20px;
-            font-size: 20px;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-family: 'Huninn';
-            border: none;
-            background: #ffd6e7;
-            cursor: pointer;
-        }
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 5px solid #333;
+      transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1);
+      transform-origin: 50% 50%;
+      display: block;
+    }
 
-        button:hover {
-            background: #ffbfdc;
-        }
-    </style>
+    #spin-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90px;
+      height: 90px;
+      background: white;
+      border-radius: 50%;
+      border: 3px solid #333;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      user-select: none;
+      z-index: 5;
+    }
+
+    #pointer {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%) rotate(180deg);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 20px solid #d9534f;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #result-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      text-align: center;
+      display: none;
+      z-index: 999;
+    }
+
+    #result-box button {
+      margin: 10px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .ok-btn { background: #5cb85c; color: white; }
+    .retry-btn { background: #d9534f; color: white; }
+
+    canvas { width: 100%; height: 100%; }
+  </style>
 </head>
 <body>
 
-    <!-- 🔼 只改這裡的位置 -->
-    <h1>吃什麼好呢？</h1>
+  <!-- ⭐ 外層容器，讓 h1 在轉盤上方置中 -->
+  <div class="page-container">
+    <h1>吃什麼好呢?</h1>
 
-    <canvas id="wheel" width="500" height="500"></canvas>
+    <div id="wheel-container">
+      <div id="pointer"></div>
+      <canvas id="wheel" width="800" height="800"></canvas>
+      <div id="spin-btn">開始</div>
+    </div>
+  </div>
 
-    <button onclick="spin()">轉一下！</button>
+  <div id="result-box">
+    <h2 id="result-text"></h2>
+    <button class="ok-btn" id="okBtn">好，就吃這個!</button>
+    <button class="retry-btn" id="retryBtn">不想吃這個</button>
+  </div>
 
-    <script>
-        async function loadHuninnFont() {
-            const font = new FontFace('Huninn', 'url(./jf-openhuninn-2.1.ttf)');
-            await font.load();
-            document.fonts.add(font);
-        }
+  <script>
+    const foods = ["漢堡", "義大利麵", "壽司", "滷肉飯", "火鍋", "炒飯", "披薩", "牛肉麵"];
+    const wheel = document.getElementById("wheel");
+    const ctx = wheel.getContext("2d");
+    const resultBox = document.getElementById("result-box");
+    const resultText = document.getElementById("result-text");
+    const spinBtn = document.getElementById("spin-btn");
+    const okBtn = document.getElementById("okBtn");
+    const retryBtn = document.getElementById("retryBtn");
 
-        loadHuninnFont().then(() => drawWheel());
+    let startAngle = 0;
+    let currentRotation = 0;
+    let spinning = false;
 
-        const foods = [
-            "拉麵", "火鍋", "炒飯", "滷肉飯",
-            "牛肉麵", "水餃", "披薩", "漢堡"
-        ];
+    function drawWheel() {
+      const centerX = wheel.width / 2;
+      const centerY = wheel.height / 2;
+      const radius = Math.min(centerX, centerY) - 10;
+      const arc = (2 * Math.PI) / foods.length;
 
-        const wheel = document.getElementById("wheel");
-        const ctx = wheel.getContext("2d");
-        const size = wheel.width / 2;
-        let angle = 0;
+      const pastelColors = ["#ffb3c6", "#ffd59e", "#fff7a3", "#b8e8d1", "#bcdcff", "#c9b5ff", "#ffb8e1", "#f7c7aa"];
 
-        function drawWheel() {
-            const step = (Math.PI * 2) / foods.length;
+      ctx.clearRect(0, 0, wheel.width, wheel.height);
 
-            ctx.clearRect(0, 0, wheel.width, wheel.height);
-            ctx.save();
-            ctx.translate(size, size);
+      for (let i = 0; i < foods.length; i++) {
+        const angle = startAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = pastelColors[i % pastelColors.length];
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arc);
+        ctx.closePath();
+        ctx.fill();
 
-            for (let i = 0; i < foods.length; i++) {
-                ctx.beginPath();
-                ctx.fillStyle = pastelColor(i);
-                ctx.moveTo(0, 0);
-                ctx.arc(0, 0, size, i * step, (i + 1) * step);
-                ctx.fill();
-                ctx.closePath();
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#000";
 
-                // --- 文字 ---
-                ctx.save();
-                ctx.rotate(i * step + step / 2);
-                ctx.textAlign = "center";
-                ctx.font = "28px Huninn";
-                ctx.fillStyle = "#333";
-                ctx.fillText(foods[i], size * 0.65, 10);
-                ctx.restore();
-            }
+        ctx.font = `bold ${wheel.width / 16}px Huninn`;
 
-            ctx.restore();
-            drawPointer();
-        }
+        ctx.fillText(foods[i], radius * 0.7, 5);
+        ctx.restore();
+      }
+    }
 
-        function pastelColor(index) {
-            const base = [
-                "#ffdce5", "#ffe8c2", "#e7ffd7",
-                "#d7f0ff", "#e3d7ff", "#ffd7f6",
-                "#ffefd7", "#d7ffe5"
-            ];
-            return base[index % base.length];
-        }
+    drawWheel();
 
-        function drawPointer() {
-            ctx.fillStyle = "#ff4d6d";
-            ctx.beginPath();
-            ctx.moveTo(size, 10);
-            ctx.lineTo(size - 15, 50);
-            ctx.lineTo(size + 15, 50);
-            ctx.closePath();
-            ctx.fill();
-        }
+    spinBtn.addEventListener('click', spinWheel);
+    retryBtn.addEventListener('click', spinWheel);
+    okBtn.addEventListener('click', () => resultBox.style.display = "none");
 
-        function spin() {
-            let spinAngle = Math.random() * 4 + 6;
-            let spinTime = 0;
-            let spinTimeTotal = 2500;
+    function spinWheel() {
+      if (spinning) return;
+      spinning = true;
+      resultBox.style.display = "none";
 
-            function rotate() {
-                spinTime += 20;
+      let extraSpin;
+      const arcDeg = 360 / foods.length;
+      let boundary = null;
+      do {
+        extraSpin = 360 * 5 + Math.random() * 360;
+        const predicted = (currentRotation + extraSpin) % 360;
+        const pointerDeg = 90;
+        const corrected = (predicted + pointerDeg) % 360;
+        boundary = corrected % arcDeg;
+      } while (boundary < 2 || boundary > arcDeg - 2);
 
-                angle += spinAngle;
-                wheel.style.transform = `rotate(${angle}deg)`;
+      currentRotation += extraSpin;
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-                if (spinTime < spinTimeTotal) {
-                    requestAnimationFrame(rotate);
-                }
-            }
-            rotate();
-        }
-    </script>
+      setTimeout(() => {
+        const finalAngle = currentRotation % 360;
+        const arc = 360 / foods.length;
+        const correctedAngle = (360 - finalAngle + 90) % 360;
+        const index = Math.floor(correctedAngle / arc);
+        const selectedFood = foods[(index + foods.length) % foods.length];
 
+        resultText.textContent = `今天吃${selectedFood}`;
+        resultBox.style.display = "block";
+        spinning = false;
+      }, 4200);
+    }
+
+    window.addEventListener('resize', drawWheel);
+  </script>
 </body>
 </html>
