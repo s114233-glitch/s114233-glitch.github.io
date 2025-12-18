@@ -17,32 +17,25 @@
       background: #f5f5f5;
     }
 
-    /* ⭐ 背景圖片（間距加大、不重疊） */
+    /* ⭐ 背景圖片（不重疊、間距大） */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
       z-index: 0;
       pointer-events: none;
-
       background-image:
         url("orange-chicken.png"),
         url("noodles.png"),
         url("burger.png"),
         url("pizza.png");
-
       background-repeat: repeat;
-
-      /* ⭐ 關鍵：格子再放大 → 圖片距離更開 */
       background-size: 420px 420px;
-
-      /* 規律錯位（等比例放大） */
       background-position:
         0 0,
         210px 210px,
         420px 0,
         630px 210px;
-
       opacity: 0.08;
     }
 
@@ -108,6 +101,44 @@
     }
 
     canvas { width: 100%; height: 100%; }
+
+    /* ⭐ 結果彈窗 */
+    #result-box {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .result-content {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .result-content h2 {
+      margin: 0 0 20px;
+      font-size: 28px;
+    }
+
+    .result-content button {
+      font-family: 'Huninn';
+      font-size: 18px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #ffd6e7;
+    }
+
+    .result-content button:hover {
+      background: #ffbfdc;
+    }
   </style>
 </head>
 
@@ -122,6 +153,14 @@
     </div>
   </div>
 
+  <!-- ⭐ 結果彈窗 -->
+  <div id="result-box">
+    <div class="result-content">
+      <h2 id="result-text"></h2>
+      <button onclick="closeResult()">好，就吃這個！</button>
+    </div>
+  </div>
+
   <script>
     const foods = [
       "漢堡", "義大利麵", "壽司", "滷肉飯",
@@ -132,6 +171,8 @@
     const wheel = document.getElementById("wheel");
     const ctx = wheel.getContext("2d");
     const spinBtn = document.getElementById("spin-btn");
+    const resultBox = document.getElementById("result-box");
+    const resultText = document.getElementById("result-text");
 
     let currentRotation = 0;
     let spinning = false;
@@ -178,8 +219,18 @@
       currentRotation += spin;
       wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-      setTimeout(() => spinning = false, 4200);
+      setTimeout(() => {
+        const finalAngle = (360 - (currentRotation % 360) + 90) % 360;
+        const index = Math.floor(finalAngle / (360 / foods.length));
+        resultText.textContent = `今天吃「${foods[index]}」`;
+        resultBox.style.display = "flex";
+        spinning = false;
+      }, 4200);
     };
+
+    function closeResult() {
+      resultBox.style.display = "none";
+    }
   </script>
 </body>
 </html>
