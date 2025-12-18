@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>晚餐轉盤</title>
   <link rel="icon" href="restaurant.png">
+
   <style>
     @font-face {
       font-family: 'Huninn';
@@ -17,7 +18,6 @@
       font-family: 'Huninn', sans-serif;
     }
 
-    /* 新增 Page Container 讓 h1 可以在上方 */
     .page-container {
       display: flex;
       flex-direction: column;
@@ -112,9 +112,8 @@
     canvas { width: 100%; height: 100%; }
   </style>
 </head>
-<body>
 
-  <!-- ⭐ 外層容器，讓 h1 在轉盤上方置中 -->
+<body>
   <div class="page-container">
     <h1>吃什麼好呢?</h1>
 
@@ -132,7 +131,13 @@
   </div>
 
   <script>
-    const foods = ["漢堡", "義大利麵", "壽司", "滷肉飯", "火鍋", "炒飯", "披薩", "牛肉麵"];
+    /* ✅ 新增完成：11 個選項 */
+    const foods = [
+      "漢堡", "義大利麵", "壽司", "滷肉飯",
+      "火鍋", "炒飯", "披薩", "牛肉麵",
+      "麥當當", "摩斯", "sukiya"
+    ];
+
     const wheel = document.getElementById("wheel");
     const ctx = wheel.getContext("2d");
     const resultBox = document.getElementById("result-box");
@@ -151,12 +156,16 @@
       const radius = Math.min(centerX, centerY) - 10;
       const arc = (2 * Math.PI) / foods.length;
 
-      const pastelColors = ["#ffb3c6", "#ffd59e", "#fff7a3", "#b8e8d1", "#bcdcff", "#c9b5ff", "#ffb8e1", "#f7c7aa"];
+      const pastelColors = [
+        "#ffb3c6", "#ffd59e", "#fff7a3", "#b8e8d1",
+        "#bcdcff", "#c9b5ff", "#ffb8e1", "#f7c7aa"
+      ];
 
       ctx.clearRect(0, 0, wheel.width, wheel.height);
 
       for (let i = 0; i < foods.length; i++) {
         const angle = startAngle + i * arc;
+
         ctx.beginPath();
         ctx.fillStyle = pastelColors[i % pastelColors.length];
         ctx.moveTo(centerX, centerY);
@@ -169,9 +178,7 @@
         ctx.rotate(angle + arc / 2);
         ctx.textAlign = "center";
         ctx.fillStyle = "#000";
-
         ctx.font = `bold ${wheel.width / 16}px Huninn`;
-
         ctx.fillText(foods[i], radius * 0.7, 5);
         ctx.restore();
       }
@@ -179,9 +186,9 @@
 
     drawWheel();
 
-    spinBtn.addEventListener('click', spinWheel);
-    retryBtn.addEventListener('click', spinWheel);
-    okBtn.addEventListener('click', () => resultBox.style.display = "none");
+    spinBtn.addEventListener("click", spinWheel);
+    retryBtn.addEventListener("click", spinWheel);
+    okBtn.addEventListener("click", () => resultBox.style.display = "none");
 
     function spinWheel() {
       if (spinning) return;
@@ -190,12 +197,12 @@
 
       let extraSpin;
       const arcDeg = 360 / foods.length;
-      let boundary = null;
+      let boundary;
+
       do {
         extraSpin = 360 * 5 + Math.random() * 360;
         const predicted = (currentRotation + extraSpin) % 360;
-        const pointerDeg = 90;
-        const corrected = (predicted + pointerDeg) % 360;
+        const corrected = (predicted + 90) % 360;
         boundary = corrected % arcDeg;
       } while (boundary < 2 || boundary > arcDeg - 2);
 
@@ -204,10 +211,9 @@
 
       setTimeout(() => {
         const finalAngle = currentRotation % 360;
-        const arc = 360 / foods.length;
         const correctedAngle = (360 - finalAngle + 90) % 360;
-        const index = Math.floor(correctedAngle / arc);
-        const selectedFood = foods[(index + foods.length) % foods.length];
+        const index = Math.floor(correctedAngle / arcDeg);
+        const selectedFood = foods[index];
 
         resultText.textContent = `今天吃${selectedFood}`;
         resultBox.style.display = "block";
@@ -215,7 +221,8 @@
       }, 4200);
     }
 
-    window.addEventListener('resize', drawWheel);
+    window.addEventListener("resize", drawWheel);
   </script>
 </body>
 </html>
+
